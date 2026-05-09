@@ -16,6 +16,9 @@
 ## ✨ 詳細機能 (Features)
 
 ### 1. 高精度な地理情報マッピングと分析
+- **過去の地震の震度表示**: 観測点の震度と、地域の最大震度の表示を切り替え可能。
+ <img width="1824" height="1074" alt="image" src="https://github.com/user-attachments/assets/8c201116-eb88-484c-975d-cfc03464f37b" />
+
 - **津波予報区のハイライト表示**: 気象庁のGISデータを基にした正確な海岸線描写により、津波警報・注意報の発表エリアを可視化。
   <img width="1665" height="992" alt="image" src="https://github.com/user-attachments/assets/5ab56bbe-118f-43a4-a3b9-af3d8150cc3b" />
 
