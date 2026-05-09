@@ -1,12 +1,11 @@
 <div align="center">
 
-# 🌍 地震情報可視化ツール eqs viewer
+# 地震情報可視化ツール eqs viewer
+**v 1.0**
 **ブラウザ完結型の地震・津波情報ダッシュボード**
 
-[![demo](https://img.shields.io/badge/Demo-Live_View-0078D4?style=for-the-badge&logo=github)](https://skotm.github.io/YOUR_REPO_NAME/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-f39c12.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+ [[https://skotm.github.io/eqs-viewer/](https://skotm.github.io/eqs-viewer/)]
 
-<img src="https://via.placeholder.com/1000x500/1C1C1E/FFFFFF?text=Earthquake+Visualizer+Preview+Image" alt="eqs viewer Preview" width="100%">
 </div>
 
 ## 📑 プロジェクト概要
@@ -45,7 +44,7 @@
 
 ### 🌐 オンラインで即座に利用する
 以下のリンクから、ブラウザ上ですぐに利用可能です。
-👉 [https://skotm.github.io/YOUR_REPO_NAME/](https://skotm.github.io/YOUR_REPO_NAME/)
+👉 [[https://skotm.github.io/eqs-viewer/](https://skotm.github.io/eqs-viewer/)]
 
 ## 📊 データソースと引用元 (Data Sources & Credits)
 
