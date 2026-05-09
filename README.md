@@ -19,7 +19,7 @@
 - **津波予報区のハイライト表示**: 気象庁のGISデータを基にした正確な海岸線描写により、津波警報・注意報の発表エリアを可視化。
   <img width="1665" height="992" alt="image" src="https://github.com/user-attachments/assets/5ab56bbe-118f-43a4-a3b9-af3d8150cc3b" />
 
-- **推計震度分布のオーバーレイ**: 震源発生後の推計震度分布（500mメッシュ相当）を地図上に重畳表示。(設定で表示可)
+- **推計震度分布のオーバーレイ**: 地震発生後の推計震度分布（500mメッシュ相当）を地図上に重畳表示。(設定で表示可)
   <img width="1663" height="995" alt="image" src="https://github.com/user-attachments/assets/bb2c9e45-f01f-4c1e-95ce-859b214a61ec" />
 
 
