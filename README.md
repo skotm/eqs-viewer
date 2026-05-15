@@ -1,7 +1,7 @@
 <div align="center">
 
 # 地震情報可視化ツール      eqs viewer
-**v 1.0**
+**v 1.1a**
 **ブラウザ完結型の地震・津波情報ダッシュボード**
 
  [[https://skotm.github.io/eqs-viewer/](https://skotm.github.io/eqs-viewer/)]
@@ -24,6 +24,8 @@
 
 - **推計震度分布のオーバーレイ**: 地震発生後の推計震度分布（500mメッシュ相当）を地図上に重畳表示。(設定で表示可)
   <img width="1663" height="995" alt="image" src="https://github.com/user-attachments/assets/bb2c9e45-f01f-4c1e-95ce-859b214a61ec" />
+
+- **過去地震検索機能**:気象庁のデータベースから、各種条件を指定して過去の地震を検索し、地図上に情報を表示。(非公式)
 
 
 ### 2. 過去データのインポート機能 (CSV)
@@ -66,7 +68,7 @@
   - 用途: `震央地名.geo.json` として、気象庁の震央地名をポリゴン描画するために利用。
 
 ### 地震・観測点データ
-- **全国の地震観測点と増幅特性リスト (iku55様 Gist)**
+- **全国の地震観測点座標リスト (iku55様 Gist)**
   - URL: [https://gist.github.com/iku55/79005d1896631ad6117bbe327b8162c1](https://gist.github.com/iku55/79005d1896631ad6117bbe327b8162c1)
 - **J-SHIS 地震ハザードステーション (防災科学技術研究所)**
   - URL: [https://www.j-shis.bosai.go.jp/labs/wm2020/](https://www.j-shis.bosai.go.jp/labs/wm2020/)
@@ -74,7 +76,7 @@
 - **気象庁 震度データベース**
   - URL: [https://www.data.jma.go.jp/svd/eqdb/data/shindo/index.html](https://www.data.jma.go.jp/svd/eqdb/data/shindo/index.html)
   - 用途: 本ツールのCSV読み込み機能の対象フォーマット。
-
+             過去地震検索の情報ソース。
 ### 使用ライブラリ
 - **Leaflet (v1.9.4)**: [https://leafletjs.com/](https://leafletjs.com/) - 地図レンダリング
 - **Turf.js (v6.5.0)**: [https://turfjs.org/](https://turfjs.org/) - 空間・ポリゴン演算
