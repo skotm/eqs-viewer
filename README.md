@@ -1,7 +1,7 @@
 <div align="center">
 
 # 地震情報可視化ツール      eqs viewer
-**v 1.1a**
+**v 1.1b**
 **ブラウザ完結型の地震・津波情報ダッシュボード**
 
  [[https://skotm.github.io/eqs-viewer/](https://skotm.github.io/eqs-viewer/)]
