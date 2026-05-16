@@ -2329,10 +2329,15 @@
             if (data.depth === "ごく浅い" || data.depth === "ごく浅いkm") depthKm = 0;
 
             if (t > 0) {
-                const pDistance = 6.0 * t;
-                if (pDistance > depthKm) currentState.pCircle.setRadius(Math.sqrt(Math.pow(pDistance, 2) - Math.pow(depthKm, 2)) * 1000); else currentState.pCircle.setRadius(0);
-                const sDistance = 3.5 * t;
-                if (sDistance > depthKm) currentState.sCircle.setRadius(Math.sqrt(Math.pow(sDistance, 2) - Math.pow(depthKm, 2)) * 1000); else currentState.sCircle.setRadius(0);
+                if (data.is_plum) {
+                    currentState.pCircle.setRadius(0);
+                    currentState.sCircle.setRadius(0);
+                } else {
+                    const pDistance = 6.0 * t;
+                    if (pDistance > depthKm) currentState.pCircle.setRadius(Math.sqrt(Math.pow(pDistance, 2) - Math.pow(depthKm, 2)) * 1000); else currentState.pCircle.setRadius(0);
+                    const sDistance = 3.5 * t;
+                    if (sDistance > depthKm) currentState.sCircle.setRadius(Math.sqrt(Math.pow(sDistance, 2) - Math.pow(depthKm, 2)) * 1000); else currentState.sCircle.setRadius(0);
+                }
             }
             currentState.animFrame = requestAnimationFrame(animate);
         }
@@ -2436,7 +2441,7 @@
                 lastUpdated: Date.now()
             });
             const state = activeEEWs.get(eventId);
-            state.pCircle.addTo(layerGroup); state.sCircle.addTo(layerGroup); state.alertLayer.addTo(layerGroup);
+            if (!isPlum) { state.pCircle.addTo(layerGroup); state.sCircle.addTo(layerGroup); } state.alertLayer.addTo(layerGroup);
             startWaveAnimation(eventId);
         }
 
@@ -2444,8 +2449,13 @@
         eewState.data = data; 
         eewState.lastUpdated = Date.now();
 
-        if (!eewState.layerGroup.hasLayer(eewState.pCircle)) eewState.pCircle.addTo(eewState.layerGroup);
-        if (!eewState.layerGroup.hasLayer(eewState.sCircle)) eewState.sCircle.addTo(eewState.layerGroup);
+        if (isPlum) {
+            if (eewState.layerGroup.hasLayer(eewState.pCircle)) eewState.layerGroup.removeLayer(eewState.pCircle);
+            if (eewState.layerGroup.hasLayer(eewState.sCircle)) eewState.layerGroup.removeLayer(eewState.sCircle);
+        } else {
+            if (!eewState.layerGroup.hasLayer(eewState.pCircle)) eewState.pCircle.addTo(eewState.layerGroup);
+            if (!eewState.layerGroup.hasLayer(eewState.sCircle)) eewState.sCircle.addTo(eewState.layerGroup);
+        }
         if (!eewState.layerGroup.hasLayer(eewState.alertLayer)) eewState.alertLayer.addTo(eewState.layerGroup);
 
         if (data.latitude && data.longitude) {
