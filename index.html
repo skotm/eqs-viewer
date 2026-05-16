@@ -96,6 +96,7 @@
         padding: 12px 10px 8px;
         border-bottom: 1px solid var(--border-color);
         display: flex; flex-direction: column; gap: 8px;
+        flex-shrink: 0;
     }
     .search-row {
         display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -125,24 +126,16 @@
         color: var(--text-secondary); min-height: 16px;
     }
     #search-list-container {
-        flex-grow: 1; overflow-y: auto; padding: 6px 8px;
+        flex-grow: 0; overflow-y: visible; padding: 6px 8px;
     }
     #search-list-container { scrollbar-width: none; -ms-overflow-style: none; }
     #search-list-container::-webkit-scrollbar { width: 0px; height: 0px; }
-    /* ポートレート: 検索フォームごとスクロール */
+    #content-search { scrollbar-width: none; -ms-overflow-style: none; }
+    #content-search::-webkit-scrollbar { width: 0px; height: 0px; }
+    /* ポートレート/ランドスケープ共通: 検索フォームごとスクロール（ベーススタイルで対応済み） */
     @media (orientation: portrait) and (max-width: 768px) {
         #content-search {
             overflow-y: auto !important;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        #content-search::-webkit-scrollbar { width: 0px; height: 0px; }
-        #search-form-area {
-            flex-shrink: 0;
-        }
-        #search-list-container {
-            overflow-y: visible !important;
-            flex-grow: 0;
         }
     }
     .search-result-item {
@@ -596,11 +589,11 @@
     <div id="search-form-area">
         <div class="search-row">
             <span class="search-label">開始日</span>
-            <input type="date" id="search-start" class="search-input" aria-label="検索開始日">
+            <input type="text" id="search-start" class="search-input" placeholder="YYYY/MM/DD" maxlength="10" aria-label="検索開始日">
         </div>
         <div class="search-row">
             <span class="search-label">終了日</span>
-            <input type="date" id="search-end" class="search-input" aria-label="検索終了日">
+            <input type="text" id="search-end" class="search-input" placeholder="YYYY/MM/DD" maxlength="10" aria-label="検索終了日">
         </div>
         <div class="search-row">
             <span class="search-label">最小M</span>
@@ -1788,11 +1781,18 @@
 
     function scaleStrToNum(str) {
         if(!str) return 0; str = str.replace(/\s+/g, '');
-        if(str.includes('7') || str.includes('７')) return 70; if(str.includes('6強') || str.includes('６強')) return 60;
-        if(str.includes('6弱') || str.includes('６弱')) return 55; if(str.includes('5強') || str.includes('５強')) return 50;
-        if(str.includes('5弱') || str.includes('５弱')) return 45; if(str.includes('4') || str.includes('４')) return 40;
-        if(str.includes('3') || str.includes('３')) return 30; if(str.includes('2') || str.includes('２')) return 20;
-        if(str.includes('1') || str.includes('１')) return 10; return 0;
+        if(str.includes('7') || str.includes('７')) return 70;
+        if(str.includes('6強') || str.includes('６強')) return 60;
+        if(str.includes('6弱') || str.includes('６弱')) return 55;
+        if(str.includes('6') || str.includes('６')) return 57; // 旧震度6
+        if(str.includes('5強') || str.includes('５強')) return 50;
+        if(str.includes('5弱') || str.includes('５弱')) return 45;
+        if(str.includes('5') || str.includes('５')) return 47; // 旧震度5
+        if(str.includes('4') || str.includes('４')) return 40;
+        if(str.includes('3') || str.includes('３')) return 30;
+        if(str.includes('2') || str.includes('２')) return 20;
+        if(str.includes('1') || str.includes('１')) return 10;
+        return 0;
     }
 
     function parseJmaCsv(text) {
@@ -3307,15 +3307,15 @@
     }).catch(err => { addSystemLog(`Err: 初期データの読み込みに失敗しました`, 'error'); });
 
     function getIntensityColor(scale) {
-        switch (scale) { case 10: return '#64D2FF'; case 20: return '#0A84FF'; case 30: return '#30D158'; case 40: return '#FFD60A'; case 45: return '#FF9F0A'; case 50: return '#FF453A'; case 55: return '#FF2D55'; case 60: return '#BF5AF2'; case 70: return '#5E5CE6'; default: return '#8E8E93'; }
+        switch (scale) { case 10: return '#64D2FF'; case 20: return '#0A84FF'; case 30: return '#30D158'; case 40: return '#FFD60A'; case 45: return '#FF9F0A'; case 47: return '#FF7020'; case 50: return '#FF453A'; case 55: return '#FF2D55'; case 57: return '#E0408E'; case 60: return '#BF5AF2'; case 70: return '#5E5CE6'; default: return '#8E8E93'; }
     }
     function getIntensityString(scale) {
-        const scaleMap = { 10: "1", 20: "2", 30: "3", 40: "4", 45: "5弱", 50: "5強", 55: "6弱", 60: "6強", 70: "7" }; 
+        const scaleMap = { 10: "1", 20: "2", 30: "3", 40: "4", 45: "5弱", 47: "5", 50: "5強", 55: "6弱", 57: "6", 60: "6強", 70: "7" }; 
         if (scale < 10 && scale >= 0) return "1未満";
         return scaleMap[scale] || "?";
     }
     function getShortIntensityString(scale) {
-        const scaleMap = { 10: "1", 20: "2", 30: "3", 40: "4", 45: "5-", 50: "5+", 55: "6-", 60: "6+", 70: "7" }; return scaleMap[scale] || "?";
+        const scaleMap = { 10: "1", 20: "2", 30: "3", 40: "4", 45: "5-", 47: "5", 50: "5+", 55: "6-", 57: "6", 60: "6+", 70: "7" }; return scaleMap[scale] || "?";
     }
 
     let legendDiv = null;
@@ -3920,7 +3920,9 @@
         const m = {
             '震度１':10,'震度1':10,'震度２':20,'震度2':20,'震度３':30,'震度3':30,
             '震度４':40,'震度4':40,'震度５弱':45,'震度5弱':45,'震度５強':50,'震度5強':50,
-            '震度６弱':55,'震度6弱':55,'震度６強':60,'震度6強':60,'震度７':70,'震度7':70
+            '震度６弱':55,'震度6弱':55,'震度６強':60,'震度6強':60,'震度７':70,'震度7':70,
+            '震度５':47,'震度5':47,  // 旧震度5（弱/強区別なし）
+            '震度６':57,'震度6':57   // 旧震度6（弱/強区別なし）
         };
         return m[str] || 0;
     }
@@ -3938,7 +3940,7 @@
         const today = new Date();
         const oneMonthAgo = new Date(today);
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        const fmt = d => d.toISOString().slice(0, 10);
+        const fmt = d => d.toISOString().slice(0, 10).replace(/-/g, '/');
         const twoDaysAgo = new Date(today); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
         document.getElementById('search-start').value = fmt(oneMonthAgo);
         document.getElementById('search-end').value   = fmt(twoDaysAgo);
@@ -4212,13 +4214,14 @@
         // 検索実行
         window.executeEqSearch = async function() {
             if (isSearching) return;
-            const startDate = document.getElementById('search-start').value;
-            const endDate   = document.getElementById('search-end').value;
+            const startDate = document.getElementById('search-start').value.replace(/\//g, '-');
+            const endDate   = document.getElementById('search-end').value.replace(/\//g, '-');
             const minMag    = parseFloat(document.getElementById('search-minmag').value) || 0.0;
             const maxInt    = document.getElementById('search-maxint').value || '1';
             const sort      = document.getElementById('search-sort').value || 'S0';
 
-            if (!startDate || !endDate) { setStatus('日付を入力してください'); return; }
+            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+            if (!startDate || !endDate || !datePattern.test(startDate) || !datePattern.test(endDate)) { setStatus('日付を YYYY/MM/DD 形式で入力してください'); return; }
 
             isSearching = true;
             const btn = document.getElementById('search-execute-btn');
