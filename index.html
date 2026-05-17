@@ -99,11 +99,11 @@
         flex-shrink: 0;
     }
     .search-row {
-        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        display: flex; align-items: center; gap: 4px;
     }
     .search-label {
         font-size: 11px; font-weight: 600; color: var(--text-secondary);
-        white-space: nowrap; min-width: 52px;
+        white-space: nowrap; width: 44px; flex-shrink: 0;
     }
     .search-input {
         flex: 1; background: rgba(255,255,255,0.08); color: #fff;
@@ -111,6 +111,13 @@
         padding: 6px 8px; outline: none; font-size: 13px;
         font-family: var(--font-family); color-scheme: dark;
     }
+    @media (max-width: 768px) {
+        .search-input { font-size: 16px; }
+    }
+    .search-input-date { flex: 1; width: 0; min-width: 0; }
+    #search-start-y, #search-end-y { flex: 2; }
+    #search-start-m, #search-end-m { flex: 1.2; }
+    #search-start-d, #search-end-d { flex: 1.2; }
     .search-input:focus { border-color: var(--accent-color); }
     #search-execute-btn {
         width: 100%; padding: 10px; border-radius: 9px;
@@ -589,15 +596,19 @@
     <div id="search-form-area">
         <div class="search-row">
             <span class="search-label">開始日</span>
-            <input type="text" id="search-start" class="search-input" placeholder="YYYY/MM/DD" maxlength="10" aria-label="検索開始日">
+            <select id="search-start-y" class="search-input search-input-date" aria-label="開始年"></select>
+            <select id="search-start-m" class="search-input search-input-date" aria-label="開始月"></select>
+            <select id="search-start-d" class="search-input search-input-date" aria-label="開始日"></select>
         </div>
         <div class="search-row">
             <span class="search-label">終了日</span>
-            <input type="text" id="search-end" class="search-input" placeholder="YYYY/MM/DD" maxlength="10" aria-label="検索終了日">
+            <select id="search-end-y" class="search-input search-input-date" aria-label="終了年"></select>
+            <select id="search-end-m" class="search-input search-input-date" aria-label="終了月"></select>
+            <select id="search-end-d" class="search-input search-input-date" aria-label="終了日"></select>
         </div>
         <div class="search-row">
             <span class="search-label">最小M</span>
-            <input type="number" id="search-minmag" class="search-input" value="0.0" min="0" max="9.9" step="0.1" aria-label="最小マグニチュード">
+            <select id="search-minmag" class="search-input" aria-label="最小マグニチュード"></select>
         </div>
         <div class="search-row">
             <span class="search-label">最大震度</span>
@@ -3936,14 +3947,45 @@
         let searchResults = [];
         let isSearching   = false;
 
-        // デフォルト日付セット
+        // 日付セレクト初期化
         const today = new Date();
-        const oneMonthAgo = new Date(today);
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        const fmt = d => d.toISOString().slice(0, 10).replace(/-/g, '/');
-        const twoDaysAgo = new Date(today); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-        document.getElementById('search-start').value = fmt(oneMonthAgo);
-        document.getElementById('search-end').value   = fmt(twoDaysAgo);
+        const curY = today.getFullYear();
+        const oneMonthAgo = new Date(today); oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        const twoDaysAgo  = new Date(today); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+        function buildDateSelects(yId, mId, dId, defaultDate) {
+            const sy = document.getElementById(yId);
+            const sm = document.getElementById(mId);
+            const sd = document.getElementById(dId);
+            const dy = defaultDate.getFullYear(), dm = defaultDate.getMonth()+1, dd = defaultDate.getDate();
+            for (let y = curY; y >= 1919; y--) {
+                const o = document.createElement('option');
+                o.value = y; o.text = y+'年'; if (y === dy) o.selected = true;
+                sy.appendChild(o);
+            }
+            for (let m = 1; m <= 12; m++) {
+                const o = document.createElement('option');
+                o.value = String(m).padStart(2,'0'); o.text = m+'月'; if (m === dm) o.selected = true;
+                sm.appendChild(o);
+            }
+            for (let d = 1; d <= 31; d++) {
+                const o = document.createElement('option');
+                o.value = String(d).padStart(2,'0'); o.text = d+'日'; if (d === dd) o.selected = true;
+                sd.appendChild(o);
+            }
+        }
+        buildDateSelects('search-start-y','search-start-m','search-start-d', oneMonthAgo);
+        buildDateSelects('search-end-y',  'search-end-m',  'search-end-d',   twoDaysAgo);
+
+        // マグニチュード選択肢生成（0.0〜9.9）
+        const magSel = document.getElementById('search-minmag');
+        const firstOpt = document.createElement('option');
+        firstOpt.value = '0.0'; firstOpt.text = '指定なし'; magSel.appendChild(firstOpt);
+        for (let m = 10; m <= 99; m++) {
+            const v = (m / 10).toFixed(1);
+            const o = document.createElement('option');
+            o.value = v; o.text = 'M' + v + '以上'; magSel.appendChild(o);
+        }
 
         // JST id → 表示用文字列 "YYYY/MM/DD HH:MM:SS"
         function jstIdToDisplay(id) {
@@ -3960,7 +4002,7 @@
             fd.append('dateTimeF[]',   '00:00');
             fd.append('dateTimeT[]',   endDate);
             fd.append('dateTimeT[]',   '23:59');
-            fd.append('mag[]',         String(minMag));
+            fd.append('mag[]',         parseFloat(minMag).toFixed(1));
             fd.append('mag[]',         '9.9');
             fd.append('dep[]',         '000');
             fd.append('dep[]',         '999');
@@ -3980,7 +4022,8 @@
             const res = await fetch(EQDB_API, { method: 'POST', body: fd });
             if (!res.ok) throw new Error(`eqdb HTTP ${res.status}`);
             const data = await res.json();
-            if (!data.res || !Array.isArray(data.res)) throw new Error('レスポンス形式エラー');
+            if (data.res === undefined && data.res === null) throw new Error('レスポンス形式エラー');
+            if (!Array.isArray(data.res)) data.res = [];
             return data;
         }
 
@@ -4214,14 +4257,17 @@
         // 検索実行
         window.executeEqSearch = async function() {
             if (isSearching) return;
-            const startDate = document.getElementById('search-start').value.replace(/\//g, '-');
-            const endDate   = document.getElementById('search-end').value.replace(/\//g, '-');
+            const startDate = document.getElementById('search-start-y').value + '-'
+                            + document.getElementById('search-start-m').value + '-'
+                            + document.getElementById('search-start-d').value;
+            const endDate   = document.getElementById('search-end-y').value + '-'
+                            + document.getElementById('search-end-m').value + '-'
+                            + document.getElementById('search-end-d').value;
             const minMag    = parseFloat(document.getElementById('search-minmag').value) || 0.0;
             const maxInt    = document.getElementById('search-maxint').value || '1';
             const sort      = document.getElementById('search-sort').value || 'S0';
 
-            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-            if (!startDate || !endDate || !datePattern.test(startDate) || !datePattern.test(endDate)) { setStatus('日付を YYYY/MM/DD 形式で入力してください'); return; }
+            if (!startDate || !endDate) { setStatus('日付を入力してください'); return; }
 
             isSearching = true;
             const btn = document.getElementById('search-execute-btn');
