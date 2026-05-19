@@ -3383,6 +3383,7 @@
         const listContainer = document.getElementById('list-container'); 
         listContainer.innerHTML = ''; 
         allEarthquakesLayer.clearLayers();
+        window._openEqTooltip = null;
 
         // 微小地震と通常地震を分けて配列化
         const microEqsToDraw = [];
@@ -3425,6 +3426,15 @@
             const eqCircle = L.circleMarker([hypo.latitude, hypo.longitude], { 
                 radius: radius, fillColor: color, color: color, weight: weight, opacity: 0.9, fillOpacity: fillOpacity 
             }).bindTooltip(tooltipText, { className: 'custom-eq-tooltip', direction: 'auto', sticky: true }).addTo(allEarthquakesLayer);
+            eqCircle.on('mouseover', function() {
+                if (window._openEqTooltip && window._openEqTooltip !== eqCircle) {
+                    window._openEqTooltip.closeTooltip();
+                }
+                window._openEqTooltip = eqCircle;
+            });
+            eqCircle.on('mouseout', function() {
+                if (window._openEqTooltip === eqCircle) window._openEqTooltip = null;
+            });
             
             const intensityLabel = isMicro ? "震度1未満/不明" : `震度${getIntensityString(maxScale)}`;
             
@@ -3454,6 +3464,8 @@
 
         try {
             let datesToFetch = new Set(); let p2pData = [];
+            // カスタム期間のms範囲（後でフィルターにも使う）
+            let rangeStartMs = null, rangeEndMs = null;
 
             if (displayConfig.showFeltEarthquakes) {
                 const res = await fetch('https://api.p2pquake.net/v2/history?codes=551&limit=100');
@@ -3471,22 +3483,33 @@
             }
 
             if (displayConfig.useCustomDateRange || (!displayConfig.showFeltEarthquakes && displayConfig.showMicroEarthquakes)) {
-                let startMs, endMs; const nowDate = new Date();
+                const nowDate = new Date();
                 if (displayConfig.useCustomDateRange && displayConfig.startDate && displayConfig.endDate) {
-                    startMs = new Date(displayConfig.startDate).getTime(); endMs = new Date(displayConfig.endDate).getTime();
-                } else { endMs = nowDate.getTime(); startMs = endMs - (24 * 60 * 60 * 1000); }
-                let tmpDate = new Date(startMs);
-                while(tmpDate.getTime() <= endMs + 24*60*60*1000) {
+                    rangeStartMs = new Date(displayConfig.startDate).getTime();
+                    rangeEndMs   = new Date(displayConfig.endDate).getTime() + 24*60*60*1000 - 1; // 終了日の末尾まで含む
+                } else { rangeEndMs = nowDate.getTime(); rangeStartMs = rangeEndMs - (24 * 60 * 60 * 1000); }
+                let tmpDate = new Date(rangeStartMs);
+                while(tmpDate.getTime() <= rangeEndMs + 24*60*60*1000) {
                     datesToFetch.add(`${tmpDate.getFullYear()}${String(tmpDate.getMonth()+1).padStart(2,'0')}${String(tmpDate.getDate()).padStart(2,'0')}`);
                     tmpDate = new Date(tmpDate.getTime() + 24 * 60 * 60 * 1000);
                 }
             }
 
-            // 安全のために今日と昨日も必ず追加
-            const nowDate = new Date(); const yesterday = new Date(nowDate.getTime() - 24 * 60 * 60 * 1000);
-            datesToFetch.add(`${nowDate.getFullYear()}${String(nowDate.getMonth()+1).padStart(2,'0')}${String(nowDate.getDate()).padStart(2,'0')}`);
-            datesToFetch.add(`${yesterday.getFullYear()}${String(yesterday.getMonth()+1).padStart(2,'0')}${String(yesterday.getDate()).padStart(2,'0')}`);
+            // 今日・昨日はカスタム期間設定中は追加しない（期間外データの混入を防ぐ）
+            if (!displayConfig.useCustomDateRange) {
+                const nowDate = new Date(); const yesterday = new Date(nowDate.getTime() - 24 * 60 * 60 * 1000);
+                datesToFetch.add(`${nowDate.getFullYear()}${String(nowDate.getMonth()+1).padStart(2,'0')}${String(nowDate.getDate()).padStart(2,'0')}`);
+                datesToFetch.add(`${yesterday.getFullYear()}${String(yesterday.getMonth()+1).padStart(2,'0')}${String(yesterday.getDate()).padStart(2,'0')}`);
+            }
 
+            // カスタム期間中はP2Pデータも期間でフィルター
+            if (displayConfig.useCustomDateRange && rangeStartMs !== null && rangeEndMs !== null) {
+                p2pData = p2pData.filter(eq => {
+                    if (!eq.earthquake || !eq.earthquake.time) return false;
+                    const t = getSafeDateObj(eq.earthquake.time).getTime();
+                    return t >= rangeStartMs && t <= rangeEndMs;
+                });
+            }
             const dateArray = Array.from(datesToFetch).sort((a,b) => b.localeCompare(a));
             
             // 並列数を制限しながら気象庁データを取得（キャッシュ活用）
@@ -3501,10 +3524,12 @@
 
             // 微小地震のみ表示モード（有感地震OFF・微小地震ON）
             if (!displayConfig.showFeltEarthquakes && displayConfig.showMicroEarthquakes) {
-                const rawEqs = jmaDataAll.map(jmaEq => {
-                    const eqDate = new Date(jmaEq.time); const timeStr = `${eqDate.getFullYear()}/${String(eqDate.getMonth()+1).padStart(2,'0')}/${String(eqDate.getDate()).padStart(2,'0')} ${String(eqDate.getHours()).padStart(2,'0')}:${String(eqDate.getMinutes()).padStart(2,'0')}:00`;
-                    return { isMicro: true, earthquake: { time: timeStr, maxScale: 0, hypocenter: { name: "気象庁生データ", latitude: jmaEq.lat, longitude: jmaEq.lon, depth: jmaEq.depth, magnitude: jmaEq.mag } } };
-                });
+                const rawEqs = jmaDataAll
+                    .filter(jmaEq => rangeStartMs === null || (jmaEq.time >= rangeStartMs && jmaEq.time <= rangeEndMs))
+                    .map(jmaEq => {
+                        const eqDate = new Date(jmaEq.time); const timeStr = `${eqDate.getFullYear()}/${String(eqDate.getMonth()+1).padStart(2,'0')}/${String(eqDate.getDate()).padStart(2,'0')} ${String(eqDate.getHours()).padStart(2,'0')}:${String(eqDate.getMinutes()).padStart(2,'0')}:00`;
+                        return { isMicro: true, earthquake: { time: timeStr, maxScale: 0, hypocenter: { name: "気象庁生データ", latitude: jmaEq.lat, longitude: jmaEq.lon, depth: jmaEq.depth, magnitude: jmaEq.mag } } };
+                    });
                 rawEqs.sort((a, b) => getSafeDateObj(b.earthquake.time).getTime() - getSafeDateObj(a.earthquake.time).getTime());
                 renderEarthquakeList(rawEqs); return;
             }
@@ -3531,7 +3556,7 @@
                 if (bestMatch) {
                     hypo.latitude = bestMatch.lat; hypo.longitude = bestMatch.lon;
                     if (bestMatch.depth > 0 && hypo.depth !== bestMatch.depth) hypo.depth = bestMatch.depth;
-                    if (bestMatch.mag >= 0 && p2pMag === -1) hypo.magnitude = bestMatch.mag;
+                    if (bestMatch.mag >= 0) hypo.magnitude = bestMatch.mag; // 気象庁の確定Mで常に上書き（更新対応）
                     bestMatch.matched = true;
                 }
             });
@@ -3542,6 +3567,8 @@
                 const microEqs = [];
                 jmaDataAll.forEach(jmaEq => {
                     if (!jmaEq.matched) {
+                        // カスタム期間指定中は期間外の微小地震を除外
+                        if (rangeStartMs !== null && (jmaEq.time < rangeStartMs || jmaEq.time > rangeEndMs)) return;
                         const eqDate = new Date(jmaEq.time); const timeStr = `${eqDate.getFullYear()}/${String(eqDate.getMonth()+1).padStart(2,'0')}/${String(eqDate.getDate()).padStart(2,'0')} ${String(eqDate.getHours()).padStart(2,'0')}:${String(eqDate.getMinutes()).padStart(2,'0')}:00`;
                         microEqs.push({ isMicro: true, earthquake: { time: timeStr, maxScale: 0, hypocenter: { name: "微小地震", latitude: jmaEq.lat, longitude: jmaEq.lon, depth: jmaEq.depth, magnitude: jmaEq.mag } } });
                     }
